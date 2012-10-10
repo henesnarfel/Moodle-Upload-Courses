@@ -35,3 +35,5 @@ theme                       Optional, STRING,   Theme setting must allow courses
 oldshortname                Optional, STRING,   Used to rename the shortname, Must be unique and not already exist
 template                    Optional, STRING,   Shortname of course to import content from
 deleted                     Optional, INT,      0/1, 0-don't delete, 1-delete
+
+changed
