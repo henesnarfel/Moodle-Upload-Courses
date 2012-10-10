@@ -10,6 +10,8 @@ You will also need to insert the line $string['site:uploadcourses'] = 'Upload co
 
 Hit the notifications page to install and you will see a link under Site Administration/Courses called Upload Courses
 
+NOTE: Defaults are only used if they don't exist in the file or for updating existing and you don't have it in the file and you select some form of default option for Existing course details
+
 Available Column fields
 fullname                    Required, STRING,   fullname of the course
 shortname                   Required, STRING,   shortname of the course, if creating new or updating existing it must be unique unless using the increment setting
