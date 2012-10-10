@@ -36,4 +36,4 @@ oldshortname                Optional, STRING,   Used to rename the shortname, Mu
 template                    Optional, STRING,   Shortname of course to import content from
 deleted                     Optional, INT,      0/1, 0-don't delete, 1-delete
 
-cha
+chaadfasdfasfasfsa
