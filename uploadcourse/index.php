@@ -44,9 +44,6 @@ raise_memory_limit(MEMORY_HUGE);
 require_login();
 admin_externalpage_setup('tooluploadcourse');
 require_capability('moodle/site:uploadcourses', get_context_instance(CONTEXT_SYSTEM));
-require_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM));
-require_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM));
-require_capability('moodle/course:delete', get_context_instance(CONTEXT_SYSTEM));
 
 $strcourserenamed             = get_string('courserenamed', 'tool_uploadcourse');
 $strcoursenotrenamedexists    = get_string('coursenotrenamedexists', 'tool_uploadcourse');
@@ -65,9 +62,15 @@ $strcoursenotaddederror       = get_string('coursenotaddederror', 'tool_uploadco
 
 $strcoursedeleted             = get_string('coursedeleted', 'tool_uploadcourse');
 $strcoursenotdeletederror     = get_string('coursenotdeletederror', 'tool_uploadcourse');
-$strcoursenotallowdeleteerror = get_string('coursenotallowdeleteerror', 'tool_uploadcourse');
+$strcoursedeletenotallow      = get_string('coursedeletenotallow', 'tool_uploadcourse');
+$strcoursecreatenotallow      = get_string('coursecreatenotallow', 'tool_uploadcourse');
+$strcourseupdatenotallow      = get_string('courseupdatenotallow', 'tool_uploadcourse');
 $strcoursenotdeletedmissing   = get_string('coursenotdeletedmissing', 'tool_uploadcourse');
 $strcoursenotdeletedoff       = get_string('coursenotdeletedoff', 'tool_uploadcourse');
+
+$cancreate = has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM);
+$canupdate = has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM);
+$candelete = has_capability('moodle/course:delete', get_context_instance(CONTEXT_SYSTEM);
 
 $errorstr                   = get_string('error');
 
@@ -271,13 +274,13 @@ if ($formdata = $mform2->is_cancelled()) {
 
         // delete course
         if (!empty($course->deleted)) {
-            if (!$allowdeletes) {
-                $coursesskipped++;
-                $upt->track('status', $strcoursenotdeletedoff, 'warning');
-                continue;
-            }
-            if ($existingcourse) {
-                if (can_delete_course($existingcourse->id)) {
+            if($candelete) {
+                if (!$allowdeletes) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcoursenotdeletedoff, 'warning');
+                    continue;
+                }
+                if ($existingcourse) {
                     if (delete_course($existingcourse, false)) {
                         $upt->track('status', $strcoursedeleted);
                         $deletes++;
@@ -286,11 +289,11 @@ if ($formdata = $mform2->is_cancelled()) {
                         $deleteerrors++;
                     }
                 } else {
-                    $upt->track('status', $strcoursenotallowdeleteerror, 'error');
+                    $upt->track('status', $strcoursenotdeletedmissing, 'error');
                     $deleteerrors++;
                 }
             } else {
-                $upt->track('status', $strcoursenotdeletedmissing, 'error');
+                $upt->track('status', $strcoursedeletenotallow, 'error');
                 $deleteerrors++;
             }
             continue;
@@ -300,41 +303,52 @@ if ($formdata = $mform2->is_cancelled()) {
 
         // renaming requested?
         if (!empty($course->oldshortname) ) {
-            if (!$allowrenames) {
-                $coursesskipped++;
-                $upt->track('status', $strcoursenotrenamedoff, 'warning');
-                continue;
-            }
+            if ($canupdate) {
+                if (!$allowrenames) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcoursenotrenamedoff, 'warning');
+                    continue;
+                }
 
-            if ($existingcourse) {
-                $upt->track('status', $strcoursenotrenamedexists, 'error');
-                $coursesskipped++;
-                $renameerrors++;
-                continue;
-            }
+                if ($existingcourse) {
+                    $upt->track('status', $strcoursenotrenamedexists, 'error');
+                    $coursesskipped++;
+                    $renameerrors++;
+                    continue;
+                }
 
-            // no guessing when looking for old shortname, it must be exact match
-            if ($oldcourse = $DB->get_record('course', array('shortname'=>$course->oldshortname))) {
-                $upt->track('id', $oldcourse->id, 'normal', false);
-                $DB->set_field('course', 'shortname', $course->shortname, array('id'=>$oldcourse->id));
-                $upt->track('shortname', '', 'normal', false); // clear previous
-                $upt->track('shortname', s($course->oldshortname).'-->'.s($course->shortname), 'info');
-                $upt->track('status', $strcourserenamed);
-                $renames++;
+                // no guessing when looking for old shortname, it must be exact match
+                if ($oldcourse = $DB->get_record('course', array('shortname'=>$course->oldshortname))) {
+                    $upt->track('id', $oldcourse->id, 'normal', false);
+                    $DB->set_field('course', 'shortname', $course->shortname, array('id'=>$oldcourse->id));
+                    $upt->track('shortname', '', 'normal', false); // clear previous
+                    $upt->track('shortname', s($course->oldshortname).'-->'.s($course->shortname), 'info');
+                    $upt->track('status', $strcourserenamed);
+                    $renames++;
+                } else {
+                    $upt->track('status', $strcoursenotrenamedmissing, 'error');
+                    $renameerrors++;
+                    $coursesskipped++;
+                    continue;
+                }
+                $existingcourse = $oldcourse;
+                $existingcourse->shortname = $course->shortname;
             } else {
-                $upt->track('status', $strcoursenotrenamedmissing, 'error');
-                $renameerrors++;
                 $coursesskipped++;
+                $upt->track('status', $strcourseupdatenotallow, 'error');
                 continue;
             }
-            $existingcourse = $oldcourse;
-            $existingcourse->shortname = $course->shortname;
         }
 
         // can we process with update or insert?
         $skip = false;
         switch ($optype) {
             case CU_COURSE_ADDNEW:
+                if (!$cancreate) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcoursecreatenotallow, 'error');
+                    $skip = true;
+                }
                 if ($existingcourse) {
                     $coursesskipped++;
                     $upt->track('status', $strcoursenotadded, 'warning');
@@ -343,6 +357,11 @@ if ($formdata = $mform2->is_cancelled()) {
                 break;
 
             case CU_COURSE_ADDINC:
+                if (!$cancreate) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcoursecreatenotallow, 'error');
+                    $skip = true;
+                }
                 if ($existingcourse) {
                     //this should not happen!
                     $upt->track('status', $strcoursenotaddederror, 'error');
@@ -352,9 +371,23 @@ if ($formdata = $mform2->is_cancelled()) {
                 break;
 
             case CU_COURSE_ADD_UPDATE:
+                if (!$cancreate and !$existingcourse) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcoursecreatenotallow, 'error');
+                    $skip = true;
+                } elseif (!$canupdate and $existingcourse) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcourseupdatenotallow, 'error');
+                    $skip = true;
+                }
                 break;
 
             case CU_COURSE_UPDATE:
+                if (!$canupdate) {
+                    $coursesskipped++;
+                    $upt->track('status', $strcourseupdatenotallow, 'error');
+                    $skip = true;
+                }
                 if (!$existingcourse) {
                     $coursesskipped++;
                     $upt->track('status', $strcoursenotupdatednotexists, 'warning');
@@ -371,10 +404,12 @@ if ($formdata = $mform2->is_cancelled()) {
             continue;
         }
 
+        // updating course
         if ($existingcourse) {
             $course->id = $existingcourse->id;
 
-            $upt->track('shortname', html_writer::link(new moodle_url('/course/view.php', array('id'=>$existingcourse->id)), s($existingcourse->shortname), array("target" => "_blank")), 'normal', false);
+            $upt->track('shortname', html_writer::link(new moodle_url('/course/view.php', array('id'=>$existingcourse->id)), 
+                s($existingcourse->shortname), array("target" => "_blank")), 'normal', false);
 
             $existingcourse->timemodified = time();
             // do NOT mess with timecreated here!
@@ -453,7 +488,8 @@ if ($formdata = $mform2->is_cancelled()) {
 
             // create course
             $course->id = create_course($course)->id;
-            $upt->track('shortname', html_writer::link(new moodle_url('/course/view.php', array('id'=>$course->id)), s($course->shortname)), 'normal', false);
+            $upt->track('shortname', html_writer::link(new moodle_url('/course/view.php', array('id'=>$course->id)), 
+                s($course->shortname)), 'normal', false);
 
             $upt->track('status', $strcourseadded);
             $upt->track('id', $course->id, 'normal', false);
@@ -607,13 +643,16 @@ function process_template_course($course, $importtype) {
     global $CFG, $DB, $USER;
  
     // Check to make sure the Template course exists
-    if(($tempcourse = $DB->get_record('course', array('shortname' => $course->template), '*', IGNORE_MISSING)) !== FALSE) {
+    if (($tempcourse = $DB->get_record('course', array('shortname' => $course->template), '*', IGNORE_MISSING)) !== FALSE) {
         $courseid = $course->id;
         $context = get_context_instance(CONTEXT_COURSE, $courseid);
 
         $importcourseid = $tempcourse->id;
         $importcontext = get_context_instance(CONTEXT_COURSE, $importcourseid);
-        if(has_capability('moodle/restore:restoretargetimport', $context) and has_capability('moodle/backup:backuptargetimport', $importcontext)) {
+        $canrestoreimport = has_capability('moodle/restore:restoretargetimport', $context);
+        $canbackupimport = has_capability('moodle/backup:backuptargetimport', $importcontext);
+
+        if ($canrestoreimport and $canbackupimport) {
             $restoretarget = ($importtype == 0) ? backup::TARGET_CURRENT_ADDING : backup::TARGET_CURRENT_DELETING;
 
             $bc = new backup_controller(backup::TYPE_1COURSE, $importcourseid, backup::FORMAT_MOODLE,
@@ -641,7 +680,9 @@ function process_template_course($course, $importtype) {
                 try {
                     $rc->execute_plan();
                 } catch (Exception $e) {
-                    return "An error occured during the restore process.<br />Most likely caused by already having a quiz that was imported from the template course you are using.<br />The contents of the course are gone.  You can run the upload script again on this course and it will process the template correctly.";
+                    return "An error occured during the restore process.<br />Most likely caused by already having a quiz that was " .
+                           "imported from the template course you are using.<br />The contents of the course are gone.  You can run " . 
+                           "the upload script again on this course and it will process the template correctly.";
                 }
             }
             $rc->destroy();
