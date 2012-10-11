@@ -31,9 +31,9 @@ require_once($CFG->dirroot.'/course/lib.php');
 require_once('locallib.php');
 require_once('course_form.php');
 require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
-require_once($CFG->dirroot . '/backup/moodle2/backup_plan_builder.class.php');
 require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
-require_once($CFG->dirroot . '/backup/util/ui/import_extensions.php');
+require_once($CFG->dirroot . '/backup/moodle2/backup_plan_builder.class.php');
+require_once($CFG->dirroot . '/backup/moodle2/restore_plan_builder.class.php');
 
 $iid         = optional_param('iid', '', PARAM_INT);
 $previewrows = optional_param('previewrows', 10, PARAM_INT);
@@ -44,6 +44,9 @@ raise_memory_limit(MEMORY_HUGE);
 require_login();
 admin_externalpage_setup('tooluploadcourse');
 require_capability('moodle/site:uploadcourses', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/course:delete', get_context_instance(CONTEXT_SYSTEM));
 
 $strcourserenamed             = get_string('courserenamed', 'tool_uploadcourse');
 $strcoursenotrenamedexists    = get_string('coursenotrenamedexists', 'tool_uploadcourse');
@@ -404,8 +407,6 @@ if ($formdata = $mform2->is_cancelled()) {
                         }
                     }
                     if ($existingcourse->$column !== $course->$column) {
-
-
                         if (in_array($column, $upt->columns)) {
                             $upt->track($column, s($existingcourse->$column).'-->'.s($course->$column), 'info', false);
                         }

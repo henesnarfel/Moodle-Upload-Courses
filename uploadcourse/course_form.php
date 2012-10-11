@@ -108,8 +108,7 @@ class admin_uploadcourse_form2 extends moodleform {
 
         $mform->addElement('selectyesno', 'cuallowtemplate', get_string('importexisting', 'tool_uploadcourse'));
         $mform->setDefault('cuallowtemplate', 0);
-        $mform->disabledIf('cuallowtemplate', 'cutype', 'eq', CU_COURSE_ADDNEW);
-        $mform->disabledIf('cuallowtemplate', 'cutype', 'eq', CU_COURSE_ADDINC);
+        $mform->disabledIf('cuallowtemplate', 'cuupdatetype', 'eq', CU_UPDATE_NOCHANGES);
 
         $choices = array(CU_ADD_TO_EXISTING    => get_string('cuaddtoexisting', 'tool_uploadcourse'),
                          CU_OVERWRITE_EXISTING => get_string('cuoverwriteexisting', 'tool_uploadcourse'));

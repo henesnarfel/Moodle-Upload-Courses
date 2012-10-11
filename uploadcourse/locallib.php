@@ -235,8 +235,9 @@ function cu_process_template($template, $course) {
 
     $fullname  = isset($course->fullname)  ? $course->fullname  : '';
     $shortname = isset($course->shortname) ? $course->shortname : '';
+    $idnumber = isset($course->idnumber) ? $course->idnumber : '';
 
-    $callback = partial('cu_process_template_callback', $fullname, $shortname);
+    $callback = partial('cu_process_template_callback', $fullname, $shortname, $idnumber);
 
     $result = preg_replace_callback('/(?<!%)%([+-~])?(\d)*([fs])/', $callback, $t);
 
@@ -255,7 +256,7 @@ function cu_process_template($template, $course) {
 /**
  * Internal callback function.
  */
-function cu_process_template_callback($fullname, $shortname, $block) {
+function cu_process_template_callback($fullname, $shortname, $idnumber, $block) {
     $textlib = textlib_get_instance();
 
     switch ($block[3]) {
@@ -264,6 +265,9 @@ function cu_process_template_callback($fullname, $shortname, $block) {
             break;
         case 's':
             $repl = $shortname;
+            break;
+        case 'i':
+            $repl = $idnumber;
             break;
         default:
             return $block[0];
