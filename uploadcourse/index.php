@@ -68,11 +68,11 @@ $strcourseupdatenotallow      = get_string('courseupdatenotallow', 'tool_uploadc
 $strcoursenotdeletedmissing   = get_string('coursenotdeletedmissing', 'tool_uploadcourse');
 $strcoursenotdeletedoff       = get_string('coursenotdeletedoff', 'tool_uploadcourse');
 
-$cancreate = has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM);
-$canupdate = has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM);
-$candelete = has_capability('moodle/course:delete', get_context_instance(CONTEXT_SYSTEM);
+$errorstr                     = get_string('error');
 
-$errorstr                   = get_string('error');
+$cancreate = has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM));
+$canupdate = has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM));
+$candelete = has_capability('moodle/course:delete', get_context_instance(CONTEXT_SYSTEM));
 
 $returnurl = new moodle_url('/admin/tool/uploadcourse/index.php');
 
